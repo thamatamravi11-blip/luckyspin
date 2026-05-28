@@ -1,14 +1,12 @@
-
-
 <!DOCTYPE html>
 <html lang="te">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lucky Spin & Win</title>
+    <title>Lucky Spin Official</title>
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Ad Network Script (Replace with your actual SDK if needed) -->
+    <!-- Ad Network Script -->
     <script src="https://alwingulla.com/88/push.js" async data-zone="YOUR_ZONE_ID" data-sdk="show_8985167"></script>
     <style>
         body {
@@ -95,10 +93,9 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Firebase configuration (REST API Endpoint)
+    // Firebase Endpoint
     const dbUrl = "https://luckyspin-bot-default-rtdb.firebaseio.com/users";
 
-    // Fallback info if opened outside Telegram
     let userId = "guest_" + Math.floor(Math.random() * 100000);
     let userName = "అపరిచిత యూజర్";
 
@@ -110,10 +107,8 @@
     let totalPoints = 0;
     let isSpinning = false;
 
-    // Load initial user data and leaderboard
     async function initApp() {
         try {
-            // Fetch current user points
             const userResponse = await fetch(`${dbUrl}/${userId}.json`);
             const userData = await userResponse.json();
             if (userData && userData.points) {
@@ -122,14 +117,14 @@
             }
             loadLeaderboard();
         } catch (error) {
-            console.error("Error loading data:", error);
+            console.error("Error initialising app:", error);
+            loadLeaderboard();
         }
     }
 
-    // Load top users from Firebase
     async function loadLeaderboard() {
         try {
-            const response = await fetch(`${dbUrl}.json?orderBy="points"&limitToLast=5`);
+            const response = await fetch(`${dbUrl}.json`);
             const data = await response.json();
             const listDiv = document.getElementById('leaderboard-list');
             listDiv.innerHTML = "";
@@ -139,14 +134,16 @@
                 return;
             }
 
-            // Convert object to array and sort descending
             let sortedUsers = [];
             for (let id in data) {
-                sortedUsers.push({ id: id, name: data[id].name, points: data[id].points });
+                if(data[id] && data[id].name) {
+                    sortedUsers.push({ id: id, name: data[id].name, points: data[id].points || 0 });
+                }
             }
             sortedUsers.sort((a, b) => b.points - a.points);
+            let topUsers = sortedUsers.slice(0, 5);
 
-            sortedUsers.forEach((user, index) => {
+            topUsers.forEach((user, index) => {
                 const isCurrentUser = user.id === userId ? " (మీరు)" : "";
                 const row = document.createElement('div');
                 row.className = 'user-row';
@@ -154,11 +151,10 @@
                 listDiv.appendChild(row);
             });
         } catch (error) {
-            console.error("Error updating leaderboard:", error);
+            console.error("Error loading leaderboard:", error);
         }
     }
 
-    // Save points to Firebase
     async function savePoints(newPoints) {
         try {
             await fetch(`${dbUrl}/${userId}.json`, {
@@ -193,7 +189,6 @@
             totalPoints += pointsWon;
             document.getElementById('points').innerText = totalPoints;
             
-            // Save to database immediately
             savePoints(totalPoints);
 
             alert(`🎉 అభినందనలు! మీరు ${pointsWon} పాయింట్లు గెలుచుకున్నారు!`);
@@ -208,7 +203,6 @@
         }, 3000);
     }
 
-    // Run on load
     initApp();
 </script>
 </body>
