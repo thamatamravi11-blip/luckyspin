@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Spin & Win</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://alwingulla.com/88/push.js" async data-zone="YOUR_ZONE_ID" data-sdk="show_8985167"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 { font-size: 24px; margin-bottom: 5px; }
+        .score-box {
+            font-size: 20px;
+            background: #ffcc00;
+            color: #111;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .wheel-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 30px auto;
+            border: 5px solid #fff;
+            border-radius: 50%;
+            background: conic-gradient(#ff3366 0deg 60deg, #33ccff 60deg 120deg, #ffcc00 120deg 180deg, #33ff66 180deg 240deg, #9933ff 240deg 300deg, #ff6600 300deg 360deg);
+            transition: transform 3s cubic-bezier(0.1, 0.8, 0.3, 1);
+        }
+        .spin-btn {
+            background: #ff3366;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+        }
+        .spin-btn:disabled { background: #555; cursor: not-allowed; }
+        .leaderboard {
+            margin-top: 30px;
+            text-align: left;
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .leaderboard h3 { margin-top: 0; color: #ffcc00; text-align: center;}
+        .user-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎯 Lucky Spin & Win</h1>
+    <p style="font-size: 12px; color: #ccc;">టాప్ 10 మందికి ప్రతి వారం Paytm క్యాష్!</p>
+    <div class="score-box">నా పాయింట్లు: <span id="points">0</span></div>
+    <div class="wheel-container" id="wheel"></div>
+    <button class="spin-btn" id="spinBtn" onclick="startSpin()">SPIN NOW 🎰</button>
+    <div class="leaderboard">
+        <h3>🏆 వీక్లీ లీడర్‌బోర్డ్ (Top 5)</h3>
+        <div class="user-row"><span>1. రాకేష్ (మీరు)</span><span id="userPoints">0 Pts</span></div>
+        <div class="user-row"><span>2. కిరణ్</span><span>450 Pts</span></div>
+        <div class="user-row"><span>3. సురేష్</span><span>380 Pts</span></div>
+        <div class="user-row"><span>4. అనిత</span><span>310 Pts</span></div>
+        <div class="user-row"><span>5. దివ్య</span><span>250 Pts</span></div>
+    </div>
+</div>
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    let totalPoints = 0;
+    let isSpinning = false;
+    function startSpin() {
+        if (isSpinning) return;
+        if (typeof show_8985167 === 'function') {
+            show_8985167().then(() => { runWheelLogic(); }).catch((err) => { runWheelLogic(); });
+        } else {
+            runWheelLogic();
+        }
+    }
+    function runWheelLogic() {
+        isSpinning = true;
+        document.getElementById('spinBtn').disabled = true;
+        const wheel = document.getElementById('wheel');
+        const randomDeg = Math.floor(Math.random() * 360) + 1800;
+        wheel.style.transform = `rotate(${randomDeg}deg)`;
+        setTimeout(() => {
+            const pointsWon = Math.floor(Math.random() * 50) + 10;
+            totalPoints += pointsWon;
+            document.getElementById('points').innerText = totalPoints;
+            document.getElementById('userPoints').innerText = totalPoints + " Pts";
+            alert(`🎉 అభినందనలు! మీరు ${pointsWon} పాయింట్లు గెలుచుకున్నారు!`);
+            wheel.style.transition = 'none';
+            wheel.style.transform = `rotate(${randomDeg % 360}deg)`;
+            setTimeout(() => {
+                wheel.style.transition = 'transform 3s cubic-bezier(0.1, 0.8, 0.3, 1)';
+                isSpinning = false;
+                document.getElementById('spinBtn').disabled = false;
+            }, 50);
+        }, 3000);
+    }
+</script>
+</body>
+</html>
+
