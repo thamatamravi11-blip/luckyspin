@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lucky Spin Official</title>
-    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Ad Network Script -->
     <script src="https://alwingulla.com/88/push.js" async data-zone="YOUR_ZONE_ID" data-sdk="show_8985167"></script>
     <style>
         body {
@@ -55,10 +53,25 @@
             border-radius: 30px;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+            width: 80%;
+            margin-bottom: 15px;
         }
-        .spin-btn:disabled { background: #555; cursor: not-allowed; }
+        .invite-btn {
+            background: #25d366;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+            width: 80%;
+            margin-bottom: 20px;
+        }
+        .spin-btn:disabled, .invite-btn:disabled { background: #555; cursor: not-allowed; }
         .leaderboard {
-            margin-top: 30px;
+            margin-top: 15px;
             text-align: left;
             background: rgba(0,0,0,0.4);
             padding: 15px;
@@ -76,15 +89,17 @@
 <body>
 <div class="container">
     <h1>🎯 Lucky Spin & Win</h1>
-    <p style="font-size: 12px; color: #ccc;">టాప్ 10 మందికి ప్రతి వారం Paytm క్యాష్!</p>
+    <p style="font-size: 12px; color: #ccc;">ప్రతి రెఫరల్‌కి 100 పాయింట్లు బోనస్!</p>
     <div class="score-box">నా పాయింట్లు: <span id="points">0</span></div>
     <div class="wheel-container" id="wheel"></div>
+    
     <button class="spin-btn" id="spinBtn" onclick="startSpin()">SPIN NOW 🎰</button>
+    <button class="invite-btn" id="inviteBtn" onclick="shareReferral()">ఫ్రెండ్స్‌ని ఇన్వైట్ చేయి 👥</button>
     
     <div class="leaderboard">
         <h3>🏆 వీక్లీ లీడర్‌బోర్డ్ (Top 5)</h3>
         <div id="leaderboard-list">
-            <div style="text-align:center; color:#ccc;">లోడ్ అవుతోంది...</div>
+            <div style="text-align:center; color:#ccc;">ಲೋಡ್ ಆಗುತ್ತಿದೆ...</div>
         </div>
     </div>
 </div>
@@ -93,27 +108,44 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Firebase Endpoint
+    // Firebase URL ఎండ్‌పాయింట్
     const dbUrl = "https://luckyspin-bot-default-rtdb.firebaseio.com/users";
+    const botUsername = "LuckySpinWin_ravi_bot"; // నీ బోట్ యూజర్‌నేమ్
 
     let userId = "guest_" + Math.floor(Math.random() * 100000);
     let userName = "అపరిచిత యూజర్";
+    let referrerId = null;
 
+    // టెలిగ్రామ్ నుండి యూజర్ డేటా మరియు రెఫరల్ ఐడీ (startapp) రీడ్ చేయడం
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
         userId = tg.initDataUnsafe.user.id.toString();
         userName = tg.initDataUnsafe.user.first_name || "User_" + userId;
+        
+        if (tg.initDataUnsafe.start_param) {
+            referrerId = tg.initDataUnsafe.start_param.toString();
+        }
     }
 
     let totalPoints = 0;
     let isSpinning = false;
+    let isNewUser = false;
 
     async function initApp() {
         try {
             const userResponse = await fetch(`${dbUrl}/${userId}.json`);
             const userData = await userResponse.json();
-            if (userData && userData.points) {
-                totalPoints = userData.points;
+            
+            if (userData) {
+                totalPoints = userData.points || 0;
                 document.getElementById('points').innerText = totalPoints;
+            } else {
+                // డేటాబేస్‌లో యూజర్ లేకపోతే కొత్త యూజర్ కింద లెక్క
+                isNewUser = true;
+                await fetch(`${dbUrl}/${userId}.json`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name: userName, points: 0, referredBy: referrerId || "none" }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
             }
             loadLeaderboard();
         } catch (error) {
@@ -130,7 +162,7 @@
             listDiv.innerHTML = "";
 
             if (!data) {
-                listDiv.innerHTML = `<div style="text-align:center; padding:5px; color:#ccc;">ఇంకా ఎవరూ స్పిన్ చేయలేదు! మొదటి వ్యక్తి మీరే అవ్వండి!</div>`;
+                listDiv.innerHTML = `<div style="text-align:center; padding:5px; color:#ccc;">ఇంకా ఎవరూ స్పిన్ చేయలేదు!</div>`;
                 return;
             }
 
@@ -155,17 +187,50 @@
         }
     }
 
+    // పాయింట్లు అప్‌డేట్ చేయడం + రెఫరల్ చెక్ లాజిక్
     async function savePoints(newPoints) {
         try {
+            // ప్రస్తుత యూజర్ పాయింట్లు అప్‌డేట్
             await fetch(`${dbUrl}/${userId}.json`, {
-                method: 'PUT',
-                body: JSON.stringify({ name: userName, points: newPoints }),
+                method: 'PATCH',
+                body: JSON.stringify({ points: newPoints }),
                 headers: { 'Content-Type': 'application/json' }
             });
+
+            // కొత్త యూజర్ మొదటిసారి స్పిన్ చేసినప్పుడు రెఫరల్‌కి బోనస్ ఇవ్వడం
+            if (isNewUser && referrerId && referrerId !== userId) {
+                try {
+                    const refResponse = await fetch(`${dbUrl}/${referrerId}.json`);
+                    const refData = await refResponse.json();
+                    if (refData) {
+                        let currentRefPoints = refData.points || 0;
+                        let updatedRefPoints = currentRefPoints + 100; // 100 పాయింట్లు బోనస్
+                        
+                        await fetch(`${dbUrl}/${referrerId}.json`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ points: updatedRefPoints }),
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error processing referral bonus:", e);
+                }
+                isNewUser = false; // బోనస్ ఒకసారే ఇవ్వాలి
+            }
             loadLeaderboard();
         } catch (error) {
             console.error("Error saving points:", error);
         }
+    }
+
+    // ఫ్రెండ్స్‌కి ఇన్వైట్ లింక్ షేర్ చేసే ఫంక్షన్
+    function shareReferral() {
+        const refLink = `https://t.me/${botUsername}/spin?startapp=${userId}`;
+        const shareText = encodeURIComponent(`🎯 మామా! ఈ లక్కీ స్పిన్ గేమ్ ఆడుతూ వీక్లీ Paytm క్యాష్ గెలుచుకో! నా లింక్ ద్వారా జాయిన్ అవ్వు:`);
+        const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${shareText}`;
+        
+        // టెలిగ్రామ్ ఇన్-యాప్ బ్రౌజర్‌లో షేర్ విండో ఓపెన్ అవుతుంది
+        tg.openTelegramLink(telegramShareUrl);
     }
 
     function startSpin() {
