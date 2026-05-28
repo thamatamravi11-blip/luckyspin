@@ -233,14 +233,25 @@
         tg.openTelegramLink(telegramShareUrl);
     }
 
-    function startSpin() {
-        if (isSpinning) return;
-        if (typeof show_8985167 === 'function') {
-            show_8985167().then(() => { runWheelLogic(); }).catch((err) => { runWheelLogic(); });
-        } else {
+    
+
+function startSpin() {
+    if (isSpinning) return;
+    
+    if (typeof show_11067418 === 'function') {
+        show_11067418().then(() => {
             runWheelLogic();
-        }
+        }).catch((err) => {
+            console.error("యాడ్ లోడింగ్ ఎర్రర్:", err);
+            runWheelLogic();
+        });
+    } else {
+        runWheelLogic();
     }
+}
+
+
+        
 
     function runWheelLogic() {
         isSpinning = true;
