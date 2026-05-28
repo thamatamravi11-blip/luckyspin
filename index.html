@@ -1,10 +1,14 @@
+
+
 <!DOCTYPE html>
 <html lang="te">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lucky Spin & Win</title>
+    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Ad Network Script (Replace with your actual SDK if needed) -->
     <script src="https://alwingulla.com/88/push.js" async data-zone="YOUR_ZONE_ID" data-sdk="show_8985167"></script>
     <style>
         body {
@@ -78,20 +82,96 @@
     <div class="score-box">నా పాయింట్లు: <span id="points">0</span></div>
     <div class="wheel-container" id="wheel"></div>
     <button class="spin-btn" id="spinBtn" onclick="startSpin()">SPIN NOW 🎰</button>
+    
     <div class="leaderboard">
         <h3>🏆 వీక్లీ లీడర్‌బోర్డ్ (Top 5)</h3>
-        <div class="user-row"><span>1. రాకేష్ (మీరు)</span><span id="userPoints">0 Pts</span></div>
-        <div class="user-row"><span>2. కిరణ్</span><span>450 Pts</span></div>
-        <div class="user-row"><span>3. సురేష్</span><span>380 Pts</span></div>
-        <div class="user-row"><span>4. అనిత</span><span>310 Pts</span></div>
-        <div class="user-row"><span>5. దివ్య</span><span>250 Pts</span></div>
+        <div id="leaderboard-list">
+            <div style="text-align:center; color:#ccc;">లోడ్ అవుతోంది...</div>
+        </div>
     </div>
 </div>
+
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
+
+    // Firebase configuration (REST API Endpoint)
+    const dbUrl = "https://luckyspin-bot-default-rtdb.firebaseio.com/users";
+
+    // Fallback info if opened outside Telegram
+    let userId = "guest_" + Math.floor(Math.random() * 100000);
+    let userName = "అపరిచిత యూజర్";
+
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        userId = tg.initDataUnsafe.user.id.toString();
+        userName = tg.initDataUnsafe.user.first_name || "User_" + userId;
+    }
+
     let totalPoints = 0;
     let isSpinning = false;
+
+    // Load initial user data and leaderboard
+    async function initApp() {
+        try {
+            // Fetch current user points
+            const userResponse = await fetch(`${dbUrl}/${userId}.json`);
+            const userData = await userResponse.json();
+            if (userData && userData.points) {
+                totalPoints = userData.points;
+                document.getElementById('points').innerText = totalPoints;
+            }
+            loadLeaderboard();
+        } catch (error) {
+            console.error("Error loading data:", error);
+        }
+    }
+
+    // Load top users from Firebase
+    async function loadLeaderboard() {
+        try {
+            const response = await fetch(`${dbUrl}.json?orderBy="points"&limitToLast=5`);
+            const data = await response.json();
+            const listDiv = document.getElementById('leaderboard-list');
+            listDiv.innerHTML = "";
+
+            if (!data) {
+                listDiv.innerHTML = `<div style="text-align:center; padding:5px; color:#ccc;">ఇంకా ఎవరూ స్పిన్ చేయలేదు! మొదటి వ్యక్తి మీరే అవ్వండి!</div>`;
+                return;
+            }
+
+            // Convert object to array and sort descending
+            let sortedUsers = [];
+            for (let id in data) {
+                sortedUsers.push({ id: id, name: data[id].name, points: data[id].points });
+            }
+            sortedUsers.sort((a, b) => b.points - a.points);
+
+            sortedUsers.forEach((user, index) => {
+                const isCurrentUser = user.id === userId ? " (మీరు)" : "";
+                const row = document.createElement('div');
+                row.className = 'user-row';
+                row.innerHTML = `<span>${index + 1}. ${user.name}${isCurrentUser}</span><span>${user.points} Pts</span>`;
+                listDiv.appendChild(row);
+            });
+        } catch (error) {
+            console.error("Error updating leaderboard:", error);
+        }
+    }
+
+    // Save points to Firebase
+    async function savePoints(newPoints) {
+        try {
+            await fetch(`${dbUrl}/${userId}.json`, {
+                method: 'PUT',
+                body: JSON.stringify({ name: userName, points: newPoints }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            loadLeaderboard();
+        } catch (error) {
+            console.error("Error saving points:", error);
+        }
+    }
+
     function startSpin() {
         if (isSpinning) return;
         if (typeof show_8985167 === 'function') {
@@ -100,18 +180,24 @@
             runWheelLogic();
         }
     }
+
     function runWheelLogic() {
         isSpinning = true;
         document.getElementById('spinBtn').disabled = true;
         const wheel = document.getElementById('wheel');
         const randomDeg = Math.floor(Math.random() * 360) + 1800;
         wheel.style.transform = `rotate(${randomDeg}deg)`;
+        
         setTimeout(() => {
             const pointsWon = Math.floor(Math.random() * 50) + 10;
             totalPoints += pointsWon;
             document.getElementById('points').innerText = totalPoints;
-            document.getElementById('userPoints').innerText = totalPoints + " Pts";
+            
+            // Save to database immediately
+            savePoints(totalPoints);
+
             alert(`🎉 అభినందనలు! మీరు ${pointsWon} పాయింట్లు గెలుచుకున్నారు!`);
+            
             wheel.style.transition = 'none';
             wheel.style.transform = `rotate(${randomDeg % 360}deg)`;
             setTimeout(() => {
@@ -121,7 +207,9 @@
             }, 50);
         }, 3000);
     }
+
+    // Run on load
+    initApp();
 </script>
 </body>
 </html>
-
